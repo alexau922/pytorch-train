@@ -275,6 +275,21 @@ class ElectraForSquad(ElectraPreTrainedModel):
             total_loss = (start_loss+end_loss)/2
         
         cls_losses = []
+        
+        if is_impossible is not None:
+            loss_fct_cls = nn.BCEWithLogitsLoss()
+            # Use sigmoid to normalize the value and use BCE loss
+            answerability_loss = loss_fct_cls(answerability,is_impossible)
+            cls_losses.append(answerability_loss)
+        
+        # if we have the [CLS] tag loss
+        if len(cls_losses) >0:
+            # Add all the values in the cls_losses
+            total_loss += torch.stack(cls_losses, dim = 0).sum()
+        
+        output = (start_logits,end_logits,answerability)
+        return ((total_loss,)+output) if total_loss !=0 else output
+      
 #####################################
 ## 
 ##            Data Utils
@@ -325,41 +340,40 @@ class textDataset(Dataset):
             self.attention_mask_bin_buffer_mmap = np.memmap(path, mode='r', order='C')
             self.attention_mask_bin_buffer = self.attention_mask_bin_buffer_mmap 
 
-            path = data_path+prefix+"_label"
-            self.labels_bin_buffer_mmap = np.memmap(path, mode='r', order='C')
-            self.labels_bin_buffer = self.labels_bin_buffer_mmap
-
             path = data_path+prefix+"_type_ids"
             self.type_ids_bin_buffer_mmap = np.memmap(path, mode='r', order='C')
             self.type_ids_bin_buffer = self.type_ids_bin_buffer_mmap 
+            
+            path = data_path+prefix+"_start_pos"
+            self.start_pos_bin_buffer_mmap = np.memmap(path, mode='r', order='C')
+            self.start_pos_bin_buffer = self.start_pos_bin_buffer_mmap
+             
+            path = data_path+prefix+"_end_pos"
+            self.end_pos_bin_buffer_mmap = np.memmap(path, mode='r', order='C')
+            self.end_pos_bin_buffer = self.end_pos_bin_buffer_mmap
+             
+            path = data_path+prefix+"_answerable"
+            self.answerable_bin_buffer_mmap = np.memmap(path, mode='r', order='C')
+            self.answerable_bin_buffer = self.answerable_bin_buffer_mmap
         
         start = seq_length*i*2
         shape = (size,self.seq_length)
         
         ids_buffer = np.frombuffer(self.ids_bin_buffer, dtype=np.int16, count=seq_length*size, offset=start).reshape(shape)
-        labels_buffer = np.frombuffer(self.labels_bin_buffer, dtype=np.int8, count=size, offset=i).reshape((size))
         attention_mask_buffer = np.frombuffer(self.attention_mask_bin_buffer, dtype=np.int8, count=seq_length*size, offset=start // 2).reshape(shape)
         type_ids_buffer = np.frombuffer(self.type_ids_bin_buffer, dtype=np.int8, count=seq_length*size, offset=start // 2).reshape(shape)
+        answerable_pos_buffer = np.frombuffer(self.answerable_bin_buffer, dtype=np.int8, count=size, offset=i).reshape((size))
+        start_pos_buffer = np.frombuffer(self.start_pos_bin_buffer, dtype=np.int8, count=size, offset=i).reshape((size))
+        end_pos_buffer = np.frombuffer(self.end_pos_bin_buffer, dtype=np.int8, count=size, offset=i).reshape((size))
+        
         return (
             torch.LongTensor(ids_buffer),
             torch.LongTensor(attention_mask_buffer), 
-            torch.LongTensor(labels_buffer), 
             torch.LongTensor(type_ids_buffer), 
+            torch.LongTensor(answerable_buffer), 
+            torch.LongTensor(start_pos_buffer),
+            torch.LongTensor(end_pos_buffer)
         )
-
-        if is_impossible is not None:
-            loss_fct_cls = nn.BCEWithLogitsLoss()
-            # Use sigmoid to normalize the value and use BCE loss
-            answerability_loss = loss_fct_cls(answerability,is_impossible)
-            cls_losses.append(answerability_loss)
-        
-        # if we have the [CLS] tag loss
-        if len(cls_losses) >0:
-            # Add all the values in the cls_losses
-            total_loss += torch.stack(cls_losses, dim = 0).sum()
-        
-        output = (start_logits,end_logits,answerability)
-        return ((total_loss,)+output) if total_loss !=0 else output
             
 def get_model(tokenizer,*args):
     config = ElectraConfig.from_pretrained('google/electra-base-discriminator')
