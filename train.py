@@ -811,6 +811,7 @@ parser.add_argument( '--num-cores', default=8, type=int,
 parser.add_argument( '--num-workers', default=1, type=int, 
                     help='num of preprocessing workers')
 parser.add_argument( '--anomaly-detection', action='store_true', help='enable pytorch anomaly detection')
+parser.add_argument('--prefix',default ='',type = string, help = 'prefix string of the file path')
 
 args = parser.parse_args()
 
