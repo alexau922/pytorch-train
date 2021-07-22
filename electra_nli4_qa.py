@@ -275,7 +275,78 @@ class ElectraForSquad(ElectraPreTrainedModel):
             total_loss = (start_loss+end_loss)/2
         
         cls_losses = []
+#####################################
+## 
+##            Data Utils
+## 
+#####################################
+
+import numpy as np
+import os
+class textDataset(Dataset):
+    def __init__(self, 
+                 data_path, 
+                 seq_length,
+                 batch_size, 
+                 eval=False, 
+                 eval_num_samples=0):
+        self.seq_length = seq_length
+        self.batch_size = batch_size
+        self.data_path = data_path
         
+        self.eval_num_samples = (eval_num_samples // batch_size)
+        self.eval = eval
+
+        prefix = 'test' if self.eval else 'train'
+        self.length = os.stat(data_path+prefix+"_ids").st_size//(seq_length*2) // batch_size
+
+        self.ids_bin_buffer = None
+        self.dataset = None
+
+    def __len__(self):
+        return self.length
+    
+    def __getitem__(self, i):
+        if i >= self.length:
+            raise StopIteration
+        return self.__getbatch__(i*self.batch_size, self.batch_size)
+
+    def __getbatch__(self, i, size):
+        seq_length = self.seq_length
+        if self.ids_bin_buffer is None:
+            data_path = self.data_path
+            prefix = 'test' if self.eval else 'train'
+
+            path = data_path+prefix+"_ids" 
+            self.ids_bin_buffer_mmap = np.memmap(path, mode='r', order='C')
+            self.ids_bin_buffer = self.ids_bin_buffer_mmap
+
+            path = data_path+prefix+"_mask"
+            self.attention_mask_bin_buffer_mmap = np.memmap(path, mode='r', order='C')
+            self.attention_mask_bin_buffer = self.attention_mask_bin_buffer_mmap 
+
+            path = data_path+prefix+"_label"
+            self.labels_bin_buffer_mmap = np.memmap(path, mode='r', order='C')
+            self.labels_bin_buffer = self.labels_bin_buffer_mmap
+
+            path = data_path+prefix+"_type_ids"
+            self.type_ids_bin_buffer_mmap = np.memmap(path, mode='r', order='C')
+            self.type_ids_bin_buffer = self.type_ids_bin_buffer_mmap 
+        
+        start = seq_length*i*2
+        shape = (size,self.seq_length)
+        
+        ids_buffer = np.frombuffer(self.ids_bin_buffer, dtype=np.int16, count=seq_length*size, offset=start).reshape(shape)
+        labels_buffer = np.frombuffer(self.labels_bin_buffer, dtype=np.int8, count=size, offset=i).reshape((size))
+        attention_mask_buffer = np.frombuffer(self.attention_mask_bin_buffer, dtype=np.int8, count=seq_length*size, offset=start // 2).reshape(shape)
+        type_ids_buffer = np.frombuffer(self.type_ids_bin_buffer, dtype=np.int8, count=seq_length*size, offset=start // 2).reshape(shape)
+        return (
+            torch.LongTensor(ids_buffer),
+            torch.LongTensor(attention_mask_buffer), 
+            torch.LongTensor(labels_buffer), 
+            torch.LongTensor(type_ids_buffer), 
+        )
+
         if is_impossible is not None:
             loss_fct_cls = nn.BCEWithLogitsLoss()
             # Use sigmoid to normalize the value and use BCE loss
@@ -370,21 +441,10 @@ def set_parser(parser):
                                 'e.g., "small", "base", "large" (default: small)')
 
 def get_dataset(args):
-    return textDataset(
-        args.data, 
-        args.seq_length, 
-        args.batch_size,
-        eval_num_samples=0,
-    )
+    return textDataset(args.data,args.seq_length,args.batch_size,eval_num_samples=0,)
 
 def get_eval_dataset(args):
-    return textDataset(
-        args.data, 
-        args.seq_length, 
-        args.batch_size,
-        eval_num_samples=0,
-        eval=True
-    )
+    return textDataset(args.data,args.seq_length,args.batch_size,eval_num_samples=0,eval = True)
     pass
 
 get_model
