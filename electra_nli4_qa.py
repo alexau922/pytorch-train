@@ -19,7 +19,7 @@ import datetime
 from torch.utils.data import Dataset, TensorDataset, DataLoader
 
 from cantokenizer import CanTokenizer
-
+from transformers import TrainingArguments
 import random
 
 '''
