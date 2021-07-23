@@ -375,9 +375,9 @@ class textDataset(Dataset):
             torch.LongTensor(end_pos_buffer)
         )
             
-def get_model(tokenizer,*args):
+def get_model(args, tokenizer):
     config = ElectraConfig.from_pretrained('google/electra-base-discriminator')
-    config.vocab_size = tokenizer.get_vocab_size()
+    config.vocab_size = tokenizer.get_vocab_size() if tokenizer else args.vocab_size
     model = ElectraForSquad(config)
     return model
 
