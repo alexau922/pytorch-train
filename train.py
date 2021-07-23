@@ -307,6 +307,7 @@ def train(rank, args):
     save_fn = os.path.join(args.save_dir, 'checkpoint_final.pt')
 
     tokenizers = get_tokenizer(args)
+    print("tokenizers", repr(tokenizers))
     args.vocab_size = tokenizers._tokenizer.get_vocab_size() if not args.vocab_size else args.vocab_size
     
     train_dataset = get_dataset(args)
