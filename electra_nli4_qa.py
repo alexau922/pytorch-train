@@ -445,7 +445,7 @@ def log_formatter(log, tb, step_i):
     log['acc'] = float(log['acc'] / log['acc_tot'])
 
 def get_tokenizer(args):
-    #return None
+    return None
     return CanTokenizer(vocab_file = args.vocab_file)
 
 def set_parser(parser):
