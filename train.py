@@ -306,8 +306,8 @@ def train(rank, args):
     torch.manual_seed(42)
     save_fn = os.path.join(args.save_dir, 'checkpoint_final.pt')
 
-    tokenizer = get_tokenizer(args)
-    args.vocab_size = tokenizer._tokenizer.get_vocab_size() if not args.vocab_size else args.vocab_size
+    tokenizers = get_tokenizer(args)
+    args.vocab_size = tokenizers._tokenizer.get_vocab_size() if not args.vocab_size else args.vocab_size
     
     train_dataset = get_dataset(args)
     
@@ -397,7 +397,7 @@ def train(rank, args):
         ##  Model Creation
         ##
         ##########################
-        model = get_model(args, tokenizer)
+        model = get_model(args, tokenizers)
 
         model.cuda(rank)
 
