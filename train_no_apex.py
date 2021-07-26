@@ -13,6 +13,7 @@
 
 
 import re
+from transformers.optimization import AdamW
 def special_model_get_parameters(model, 
                          lr, 
                          lw_lr_decay=1, #0.908517, 
@@ -216,6 +217,7 @@ try:
 except:
     pass
 from torch.nn.parallel import DistributedDataParallel as DDP
+'''
 try:
     from apex.parallel import DistributedDataParallel as DDP
 
@@ -224,7 +226,7 @@ try:
     apex_enabled = True
 except:
     apex_enabled = False
-
+'''
 def format_log(log, formatter, tb, step_i):
     args = []
     for k, v in log.items():
@@ -389,7 +391,7 @@ def train(rank, args):
             eval_loaders.append(eval_loader)
 
     if args.gpus:
-        assert apex_enabled
+        # assert apex_enabled
         torch.cuda.set_device(rank)
 
 
@@ -409,7 +411,7 @@ def train(rank, args):
         ##  Init Optimizer
         ##
         ##########################
-
+        '''
         optimizer = apex.optimizers.FusedAdam(
             model_get_parameters(model,
                                  lr=args.lr,
@@ -426,11 +428,27 @@ def train(rank, args):
             lr=args.lr, 
             weight_decay=args.weight_decay
         )
+        '''
+        # Use the adam class from pytorch instead of using apex
+        optimizer = AdamW(
+            model_get_parameters(model,
+                                 lr=args.lr,
+                                 lw_lr_decay=args.lw_lr_decay,
+                                 weight_decay=args.weight_decay,
+                                 special_layer_wise_lr=args.special_layer_wise_lr,
+                                 log = rank == 0,
+                                 ),  
 
+                                 # use this function to set extra optimizer arguments, 
+                                 # see model_get_parameters
+            betas=(0.9, 0.999), 
+            eps=1e-6,
+            lr=args.lr, 
+            weight_decay=args.weight_decay
+        )
 
-
-
-        model, optimizer = amp.initialize(model, optimizer, opt_level='O1')
+        
+        #model, optimizer = amp.initialize(model, optimizer, opt_level='O1')
         model = DDP(model)
         batches = train_loader
 
@@ -588,10 +606,11 @@ def train(rank, args):
 
                     if args.gpus:
                         default_optimizer_step = optimizer.step
-
+                        '''
                         with amp.scale_loss(total_loss, optimizer) as scaled_loss:
                             scaled_loss.backward()
-
+                        '''
+                        total_loss.backward()
                         # If Amp detects an overflow, it patches optimizer.step.  In other words, if optimizer.step
                         # was left unpatched, there was no overflow, and we don't need to replay.
                         if optimizer.step is default_optimizer_step:
