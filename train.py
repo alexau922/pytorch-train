@@ -321,7 +321,7 @@ def train(rank, args):
         args.warmup_updates = int(args.total_num_updates * args.warmup_updates)
     else:
         args.warmup_updates = int(args.warmup_updates)
-    
+    print('before train_sampler')
     train_sampler = None
     if args.gpus:
         dist.init_process_group(
@@ -356,6 +356,7 @@ def train(rank, args):
         
 
     eval_loaders = []
+    print('before args.eval_dir')
     if args.eval_dir:
         for split in args.splits.split(','):
             split = split.strip()
@@ -387,7 +388,7 @@ def train(rank, args):
                 shuffle=False,
                 num_workers=args.num_workers)
             eval_loaders.append(eval_loader)
-
+    print('before args.gpus')
     if args.gpus:
         assert apex_enabled
         torch.cuda.set_device(rank)
@@ -493,7 +494,7 @@ def train(rank, args):
         # tracker = xm.RateTracker()
         
         
-        
+    print('before args.restrore_file')
     if args.restore_file:
         states = torch.load(args.restore_file, map_location=device)
         for k, v in list(states.items()):
@@ -516,7 +517,7 @@ def train(rank, args):
             model.load_state_dict(states, strict=False)
             
     print('model.state_dict().shape = ',len(model.state_dict()))
-    
+    print('before rank == 0')
     if rank == 0:
         if not os.path.exists(os.path.dirname(save_fn)):
             try:
@@ -539,7 +540,7 @@ def train(rank, args):
     ##  Init LR Scheduler
     ##
     ##########################
-    
+    print('before if no batched_already')
     if not batched_already:
         args.total_num_updates = args.total_num_updates // args.batch_size
         args.warmup_updates = args.total_num_updates // args.batch_size
