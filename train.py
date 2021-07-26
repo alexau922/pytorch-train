@@ -515,7 +515,7 @@ def train(rank, args):
                 traceback.print_exc()
             model.load_state_dict(states, strict=False)
             
-    print('model.state_dict() = ',model.state_dict())
+    print('model.state_dict().shape = ',model.state_dict().shape)
     
     if rank == 0:
         if not os.path.exists(os.path.dirname(save_fn)):
