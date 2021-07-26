@@ -255,11 +255,19 @@ class ElectraForSquad(ElectraPreTrainedModel):
         # We can also know the answerability tensor using the split function
         answerability = self.classification(sequence_output)
         
-        # reduce the last dimension of 1
-        start_logits = start_logits.squeeze(-1)
-        end_logits = end_logits.squeeze(-1)
-        answerability = answerability.squeeze(-1)
-        total_loss = 0
+        try:
+          # reduce the last dimension of 1
+          start_logits = start_logits.squeeze(-1)
+          end_logits = end_logits.squeeze(-1)
+          answerability = answerability
+          total_loss = 0
+        except Except as e:
+          exception_type, exception_object, exception_traceback = sys.exc_info()
+          filename = exception_traceback.tb_frame.f_code.co_filename
+          line_number = exception_traceback.tb_lineno
+          print("Exception type: ", exception_type)
+          print("File name: ", filename)
+          print("Line number: ", line_number)
         
         if start_positions is not None and end_positions is not None:
             # Initialize a cross entropy loss function to enable calculation of cross entropy loss afterwards
