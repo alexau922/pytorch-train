@@ -711,8 +711,15 @@ def train(rank, args):
                     print('',flush=True)
 
 
-    except Exception as _err:
-        err = _err
+    except Exception as e:
+        err = e
+        exception_type, exception_object, exception_traceback = sys.exc_info()
+        filename = exception_traceback.tb_frame.f_code.co_filename
+        line_number = exception_traceback.tb_lineno
+        print("Exception type: ", exception_type)
+        print("File name: ", filename)
+        print("Line number: ", line_number)
+        
     finally:
         folder = os.path.split(os.path.abspath(save_fn))[0]
         os.makedirs(folder, exist_ok=True)
