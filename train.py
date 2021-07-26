@@ -720,6 +720,7 @@ def train(rank, args):
             if args.gpus:
                 torch.save(model.state_dict(), save_fn )
                 if err:
+                    print('Error:',err)
                     raise err
             else:
                 xm.save(model.state_dict(), save_fn )
