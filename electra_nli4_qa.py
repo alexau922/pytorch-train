@@ -362,7 +362,7 @@ class textDataset(Dataset):
         ids_buffer = np.frombuffer(self.ids_bin_buffer, dtype=np.int16, count=seq_length*size, offset=start).reshape(shape)
         attention_mask_buffer = np.frombuffer(self.attention_mask_bin_buffer, dtype=np.int8, count=seq_length*size, offset=start // 2).reshape(shape)
         type_ids_buffer = np.frombuffer(self.type_ids_bin_buffer, dtype=np.int8, count=seq_length*size, offset=start // 2).reshape(shape)
-        answerable_buffer = np.frombuffer(self.answerable_bin_buffer, dtype=np.int8, count=size, offset=i).reshape((size))
+        answerable_buffer = np.frombuffer(self.answerable_bin_buffer, dtype=np.float32, count=size, offset=i).reshape((size))
         start_pos_buffer = np.frombuffer(self.start_pos_bin_buffer, dtype=np.int8, count=size, offset=i).reshape((size))
         end_pos_buffer = np.frombuffer(self.end_pos_bin_buffer, dtype=np.int8, count=size, offset=i).reshape((size))
         
