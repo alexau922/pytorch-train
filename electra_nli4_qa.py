@@ -157,7 +157,7 @@ def convert(data,tokenizer, max_seq_length, prefix):
     # Cast the type of the data so that the calculation will be quicker
     ids = np.array(data_original).astype(np.int16)
     attn = np.array(data_attn_mask).astype(np.int8)
-    answerable = np.array(data_answerable).astype(np.int8)
+    answerable = np.array(data_answerable).astype(np.float32)
     start_pos = np.array(data_start_pos).astype(np.int8)
     end_pos = np.array(data_end_pos).astype(np.int8)
     type_ids = np.array(data_type_ids).astype(np.int8)
