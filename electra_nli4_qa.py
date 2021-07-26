@@ -402,7 +402,7 @@ def get_loss(model, sample, args, device, gpus=0, report=False):
 
     loss, start_logits, end_logits, answerability = model(ids, mask, type_ids,  start_positions = start_pos, 
                 end_positions = end_pos, is_impossible = answerable, return_dict=False)
-
+    print('report = ',report)
     log = None
     if report:
         log = OrderedDict()
