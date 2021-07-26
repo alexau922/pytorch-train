@@ -399,9 +399,18 @@ def get_loss(model, sample, args, device, gpus=0, report=False):
         answerable = answerable.to(device)
         start_pos = start_pos.to(device)
         end_pos = end_pos.to(device)
-
-    loss, start_logits, end_logits, answerability = model(ids, mask, type_ids,  start_positions = start_pos, 
-                end_positions = end_pos, is_impossible = answerable, return_dict=False)
+    try: 
+      loss, start_logits, end_logits, answerability = model(ids, mask, type_ids,  start_positions = start_pos, 
+                  end_positions = end_pos, is_impossible = answerable, return_dict=False)
+    except Exception as e:
+        exception_type, exception_object, exception_traceback = sys.exc_info()
+        filename = exception_traceback.tb_frame.f_code.co_filename
+        line_number = exception_traceback.tb_lineno
+        print("Exception type: ", exception_type)
+        print("File name: ", filename)
+        print("Line number: ", line_number)
+        print(e)
+        
     print('report = ',report)
     log = None
     if report:
