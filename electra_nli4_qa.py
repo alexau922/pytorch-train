@@ -286,6 +286,8 @@ class ElectraForSquad(ElectraPreTrainedModel):
         
         if is_impossible is not None:
             loss_fct_cls = nn.BCEWithLogitsLoss()
+            print('answerability_loss = ',answerability_loss)
+            print('is_impossible = ',is_impossible)
             # Use sigmoid to normalize the value and use BCE loss
             answerability_loss = loss_fct_cls(answerability,is_impossible)
             cls_losses.append(answerability_loss)
