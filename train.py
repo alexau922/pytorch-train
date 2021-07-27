@@ -579,6 +579,7 @@ def train(rank, args):
 
                 while True: # the loop only for apex Gradient Overflow
                     optimizer.zero_grad()
+                    
                     print('***before get_loss')
                     total_loss, log = get_loss(
                         model, 
@@ -590,7 +591,6 @@ def train(rank, args):
                     )
                     
                     print('***after get_loss')
-
                     if args.gpus:
                         default_optimizer_step = optimizer.step
 
