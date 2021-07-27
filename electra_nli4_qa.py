@@ -280,6 +280,12 @@ class ElectraForSquad(ElectraPreTrainedModel):
             # Do cross entropyloss
             start_loss = loss_fct(start_logits,start_positions)
             end_loss = loss_fct(end_logits,end_positions)
+            print('start_logits.shape = ',start_logits.shape)
+            print('start_positions.shape = ',start_positions.shape)
+            print('end_logits.shape = ',end_logits.shape)
+            print('end_positions.shape = ',end_positions.shape)
+            print('start_loss = ',start_loss)
+            print('end_loss = ',end_loss)
             # Calculate the total loss, the average of cross entropy loss of the start position and end position
             total_loss = (start_loss+end_loss)/2
         
@@ -287,10 +293,11 @@ class ElectraForSquad(ElectraPreTrainedModel):
         
         if is_impossible is not None:
             loss_fct_cls = nn.BCEWithLogitsLoss()
-            print('answerability = ',answerability)
-            print('is_impossible = ',is_impossible)
+            
             # Type cast the tensor to float type
             is_impossible = is_impossible.type(torch.float16)
+            print('answerability.shape = ',answerability.shape)
+            print('is_impossible.shape = ',is_impossible.shape)
             # Use sigmoid to normalize the value and use BCE loss
             answerability_loss = loss_fct_cls(answerability,is_impossible)
             print('answerability_loss = ',answerability_loss)
