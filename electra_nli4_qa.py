@@ -291,6 +291,7 @@ class ElectraForSquad(ElectraPreTrainedModel):
             print('is_impossible = ',is_impossible)
             # Type cast the tensor to float type
             is_impossible = is_impossible.type(torch.float16)
+            print('is_impossible.dtype = ',is_impossible.dtype)
             # Use sigmoid to normalize the value and use BCE loss
             answerability_loss = loss_fct_cls(answerability,is_impossible)
             print('answerability_loss = ',answerability_loss)
