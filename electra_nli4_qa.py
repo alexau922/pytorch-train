@@ -260,7 +260,7 @@ class ElectraForSquad(ElectraPreTrainedModel):
           # reduce the last dimension of 1
           start_logits = start_logits.squeeze(-1)
           end_logits = end_logits.squeeze(-1)
-          answerability = answerability
+          answerability = answerability.squeeze(-1)
           total_loss = 0
         except Except as e:
           exception_type, exception_object, exception_traceback = sys.exc_info()
@@ -291,6 +291,7 @@ class ElectraForSquad(ElectraPreTrainedModel):
             print('is_impossible = ',is_impossible)
             # Use sigmoid to normalize the value and use BCE loss
             answerability_loss = loss_fct_cls(answerability,is_impossible)
+            print('answerability_loss = ',answerability_loss)
             cls_losses.append(answerability_loss)
         
         # if we have the [CLS] tag loss
