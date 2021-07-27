@@ -303,6 +303,7 @@ class ElectraForSquad(ElectraPreTrainedModel):
             total_loss += torch.stack(cls_losses, dim = 0).sum()
         print('before return')
         output = (start_logits,end_logits,answerability)
+        print('output = ',output)
         return ((total_loss,)+output) if total_loss !=0 else output
       
 #####################################
@@ -417,6 +418,7 @@ def get_loss(model, sample, args, device, gpus=0, report=False):
     try: 
       loss, start_logits, end_logits, answerability = model(ids, mask, type_ids,  start_positions = start_pos, 
                   end_positions = end_pos, is_impossible = answerable, return_dict=False)
+      print('after getting model')
     except Exception as e:
         exception_type, exception_object, exception_traceback = sys.exc_info()
         filename = exception_traceback.tb_frame.f_code.co_filename
@@ -435,6 +437,7 @@ def get_loss(model, sample, args, device, gpus=0, report=False):
         log['end_acc'] = (end_logits.argmax(-1) == end_pos).sum()/torch.LongTensor([end_pos.shape[0]]).sum().cuda()
         log['answerability_acc'] = torch.Tensor((answerability>0).numpy() == answerable.numpy()).sum()/torch.LongTensor([answerability.shape[0]]).sum().cuda()
         log['overall_acc'] = torch.mean(torch.stack([log['start_acc'],log['end_acc'],log['answerability_acc']],dim=0))
+    print('before return loss,log')
     return loss, log
 
 
@@ -451,7 +454,7 @@ def evaluate(model, sample, args, device, record, gpus=0, report=False):
         
     start_logits, end_logits, answerability = model(ids, mask, type_ids,start_positions = start_pos, 
                 end_positions = end_pos, is_impossible = answerable, return_dict=False)
-
+    
     if 'correct_tot' not in record:
         record['correct_tot'] = 0
     if 'correct' not in record:
