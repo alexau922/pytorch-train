@@ -301,7 +301,7 @@ class ElectraForSquad(ElectraPreTrainedModel):
         if len(cls_losses) >0:
             # Add all the values in the cls_losses
             total_loss += torch.stack(cls_losses, dim = 0).sum()
-        
+        print('before return')
         output = (start_logits,end_logits,answerability)
         return ((total_loss,)+output) if total_loss !=0 else output
       
