@@ -446,7 +446,8 @@ def get_loss(model, sample, args, device, gpus=0, report=False):
     print('loss = ',loss)
     print('loss.shape = ',loss.shape)
     print('log = ', log)
-    print('log.shape = ',log.shape)
+    if log is not None:
+      print('log.shape = ',log.shape)
     return loss, log
 
 
