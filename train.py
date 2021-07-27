@@ -508,6 +508,7 @@ def train(rank, args):
                 
         if args.gpus:
             states = {"module.%s"%k : v for k, v in states.items()}
+        print('before model.load_state_dict')
         try:
             model.load_state_dict(states)
         except Exception as err:
