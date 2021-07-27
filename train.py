@@ -588,6 +588,8 @@ def train(rank, args):
                         gpus=args.gpus, 
                         report=report_step
                     )
+                    
+                    print('after get_loss')
 
                     if args.gpus:
                         default_optimizer_step = optimizer.step
