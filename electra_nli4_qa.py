@@ -422,6 +422,7 @@ def get_loss(model, sample, args, device, gpus=0, report=False):
     try: 
       loss, start_logits, end_logits, answerability = model(ids, mask, type_ids,  start_positions = start_pos, 
                   end_positions = end_pos, is_impossible = answerable, return_dict=False)
+      print('-+-check model in get_loss.')
     except Exception as e:
         import traceback
         traceback.print_exc()
