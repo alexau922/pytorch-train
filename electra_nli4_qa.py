@@ -436,7 +436,7 @@ def get_loss(model, sample, args, device, gpus=0, report=False):
         # Find the 
         log['start_acc'] = (start_logits.argmax(-1) == start_pos).sum()/torch.LongTensor([start_pos.shape[0]]).sum().cuda()
         log['end_acc'] = (end_logits.argmax(-1) == end_pos).sum()/torch.LongTensor([end_pos.shape[0]]).sum().cuda()
-        log['answerability_acc'] = torch.Tensor((answerability>0).numpy() == answerable.numpy()).sum()/torch.LongTensor([answerability.shape[0]]).sum().cuda()
+        log['answerability_acc'] = torch.Tensor((answerability>0).cpu().numpy() == answerable.cpu().numpy()).sum()/torch.LongTensor([answerability.shape[0]]).sum().cuda()
         log['overall_acc'] = torch.mean(torch.stack([log['start_acc'],log['end_acc'],log['answerability_acc']],dim=0))
     return loss, log
 
