@@ -263,12 +263,9 @@ class ElectraForSquad(ElectraPreTrainedModel):
           answerability = answerability.squeeze(-1)
           total_loss = 0
         except Except as e:
-          exception_type, exception_object, exception_traceback = sys.exc_info()
-          filename = exception_traceback.tb_frame.f_code.co_filename
-          line_number = exception_traceback.tb_lineno
-          print("Exception type: ", exception_type)
-          print("File name: ", filename)
-          print("Line number: ", line_number)
+          import traceback
+          traceback.print_exc()
+          raise e
         
         if start_positions is not None and end_positions is not None:
             # Initialize a cross entropy loss function to enable calculation of cross entropy loss afterwards
@@ -426,7 +423,8 @@ def get_loss(model, sample, args, device, gpus=0, report=False):
                   end_positions = end_pos, is_impossible = answerable, return_dict=False)
     except Exception as e:
         import traceback
-        
+        traceback.print_exc()
+        raise e
       
         
     print('report = ',report)
