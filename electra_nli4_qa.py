@@ -277,12 +277,13 @@ class ElectraForSquad(ElectraPreTrainedModel):
             # Do cross entropyloss
             start_loss = loss_fct(start_logits,start_positions)
             end_loss = loss_fct(end_logits,end_positions)
+            '''
             print('start_logits.shape = ',start_logits.shape)
             print('start_positions.shape = ',start_positions.shape)
             print('end_logits.shape = ',end_logits.shape)
             print('end_positions.shape = ',end_positions.shape)
             print('start_loss = ',start_loss)
-            print('end_loss = ',end_loss)
+            print('end_loss = ',end_loss)'''
             # Calculate the total loss, the average of cross entropy loss of the start position and end position
             total_loss = (start_loss+end_loss)/2
         
