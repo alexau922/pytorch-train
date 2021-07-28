@@ -469,7 +469,7 @@ def post_evaluate(record, args):
     record['correct_tot'] = record['correct_tot']
 
 def log_formatter(log, tb, step_i):
-    log['overall_acc'] = float(torch.mean(torch.stack([log['start_acc'],log['end_acc'],log['answerability_acc']],dim=0)))
+    pass
 
 def get_tokenizer(args):
     return None
