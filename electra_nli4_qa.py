@@ -429,7 +429,7 @@ def get_loss(model, sample, args, device, gpus=0, report=False):
         raise e
       
         
-    print('report = ',report)
+    #print('report = ',report)
     log = None
     if report:
         log = OrderedDict()
