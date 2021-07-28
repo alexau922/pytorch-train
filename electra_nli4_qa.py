@@ -424,15 +424,10 @@ def get_loss(model, sample, args, device, gpus=0, report=False):
     try: 
       loss, start_logits, end_logits, answerability = model(ids, mask, type_ids,  start_positions = start_pos, 
                   end_positions = end_pos, is_impossible = answerable, return_dict=False)
-      print('after getting model')
     except Exception as e:
-        exception_type, exception_object, exception_traceback = sys.exc_info()
-        filename = exception_traceback.tb_frame.f_code.co_filename
-        line_number = exception_traceback.tb_lineno
-        print("Exception type: ", exception_type)
-        print("File name: ", filename)
-        print("Line number: ", line_number)
-        print(e)
+        import traceback
+        
+      
         
     print('report = ',report)
     log = None
@@ -443,11 +438,6 @@ def get_loss(model, sample, args, device, gpus=0, report=False):
         log['end_acc'] = (end_logits.argmax(-1) == end_pos).sum()/torch.LongTensor([end_pos.shape[0]]).sum().cuda()
         log['answerability_acc'] = torch.Tensor((answerability>0).numpy() == answerable.numpy()).sum()/torch.LongTensor([answerability.shape[0]]).sum().cuda()
         log['overall_acc'] = torch.mean(torch.stack([log['start_acc'],log['end_acc'],log['answerability_acc']],dim=0))
-    print('loss = ',loss)
-    print('loss.shape = ',loss.shape)
-    print('log = ', log)
-    if log is not None:
-      print('log.shape = ',log.shape)
     return loss, log
 
 
