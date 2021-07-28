@@ -453,7 +453,10 @@ def evaluate(model, sample, args, device, record, gpus=0, report=False):
         answerable = answerable.to(device)
         start_pos = start_pos.to(device)
         end_pos = end_pos.to(device)
-        
+    
+    print('return value of model = ', model(ids, mask, type_ids,start_positions = start_pos, \
+                end_positions = end_pos, is_impossible = answerable, return_dict=False)) 
+    
     start_logits, end_logits, answerability = model(ids, mask, type_ids,start_positions = start_pos, 
                 end_positions = end_pos, is_impossible = answerable, return_dict=False)
     
