@@ -261,7 +261,7 @@ class ElectraForSquad(ElectraPreTrainedModel):
           start_logits = start_logits.squeeze(-1)
           end_logits = end_logits.squeeze(-1)
           answerability = answerability.squeeze(-1)
-          total_loss = 0
+          total_loss = None
         except Except as e:
           import traceback
           traceback.print_exc()
@@ -308,7 +308,7 @@ class ElectraForSquad(ElectraPreTrainedModel):
         #print('before return')
         output = (start_logits,end_logits,answerability)
         #print('output = ',output)
-        return ((total_loss,)+output) if total_loss !=0 else output
+        return ((total_loss,)+output) if total_loss is not None else output
       
 #####################################
 ## 
