@@ -321,7 +321,7 @@ def train(rank, args):
         args.warmup_updates = int(args.total_num_updates * args.warmup_updates)
     else:
         args.warmup_updates = int(args.warmup_updates)
-    print('before train_sampler')
+    #print('before train_sampler')
     train_sampler = None
     if args.gpus:
         dist.init_process_group(
@@ -572,7 +572,7 @@ def train(rank, args):
                 while True: # the loop only for apex Gradient Overflow
                     optimizer.zero_grad()
                     
-                    print('***before get_loss')
+                    #print('***before get_loss')
                     total_loss, log = get_loss(
                         model, 
                         sample, 
@@ -582,7 +582,7 @@ def train(rank, args):
                         report=report_step
                     )
                     
-                    print('***after get_loss')
+                    #print('***after get_loss')
                     if args.gpus:
                         default_optimizer_step = optimizer.step
 
