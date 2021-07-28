@@ -294,20 +294,20 @@ class ElectraForSquad(ElectraPreTrainedModel):
             
             # Type cast the tensor to float type
             is_impossible = is_impossible.type(torch.float16)
-            print('answerability.shape = ',answerability.shape)
-            print('is_impossible.shape = ',is_impossible.shape)
+            #print('answerability.shape = ',answerability.shape)
+            #print('is_impossible.shape = ',is_impossible.shape)
             # Use sigmoid to normalize the value and use BCE loss
             answerability_loss = loss_fct_cls(answerability,is_impossible)
-            print('answerability_loss = ',answerability_loss)
+            #print('answerability_loss = ',answerability_loss)
             cls_losses.append(answerability_loss)
         
         # if we have the [CLS] tag loss
         if len(cls_losses) >0:
             # Add all the values in the cls_losses
             total_loss += torch.stack(cls_losses, dim = 0).sum()
-        print('before return')
+        #print('before return')
         output = (start_logits,end_logits,answerability)
-        print('output = ',output)
+        #print('output = ',output)
         return ((total_loss,)+output) if total_loss !=0 else output
       
 #####################################
@@ -422,7 +422,7 @@ def get_loss(model, sample, args, device, gpus=0, report=False):
     try: 
       loss, start_logits, end_logits, answerability = model(ids, mask, type_ids,  start_positions = start_pos, 
                   end_positions = end_pos, is_impossible = answerable, return_dict=False)
-      print('-+-check model in get_loss.')
+      #print('-+-check model in get_loss.')
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -436,8 +436,8 @@ def get_loss(model, sample, args, device, gpus=0, report=False):
         # Find the 
         log['start_acc'] = (start_logits.argmax(-1) == start_pos).sum()/torch.LongTensor([start_pos.shape[0]]).sum().cuda()
         log['end_acc'] = (end_logits.argmax(-1) == end_pos).sum()/torch.LongTensor([end_pos.shape[0]]).sum().cuda()
-        print('answerability.device = ',answerability.device)
-        print('answerable.device = ',answerable.device)
+        #print('answerability.device = ',answerability.device)
+        #print('answerable.device = ',answerable.device)
         log['answerability_acc'] = (torch.Tensor((answerability>0).cpu().numpy() == (answerable > 0.5).cpu().numpy()).sum().cuda()/torch.LongTensor([answerability.shape[0]]).sum().cuda())
         log['overall_acc'] = torch.mean(torch.stack([log['start_acc'],log['end_acc'],log['answerability_acc']],dim=0)).cuda()
     return loss, log
