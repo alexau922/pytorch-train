@@ -660,11 +660,19 @@ def evaluate(model, sample, args, device, record, gpus=0, report=False):
     record['answerability_correct_tot'] += torch.LongTensor([answerability.shape[0]]).sum().cuda())
 
 def post_evaluate(record, args):
+    record['start_pos_correct_tot'] = record['start_pos_correct_tot'] 
+    record['start_pos_correct'] =record['start_pos_correct'] 
     record['start_acc'] = float(record['start_pos_correct'])/float(record['start_pos_correct_tot'])
+    
+    record['end_pos_correct_tot'] = record['end_pos_correct_tot']
+    record['end_pos_correct'] =record['end_pos_correct'] 
     record['end_acc'] = float(record['end_pos_correct'])/float(record['end_pos_correct_tot'])
+    
+    record['answerability_correct_tot'] = record['answerability_correct_tot']
+    record['answerability_correct'] = record['answerability_correct']
     record['answerability_acc'] = float(record['answerability_correct'])/float(record['answerability_correct_tot'])
     record['overall_acc'] = torch.mean(torch.stack([log['start_acc'],log['end_acc'],log['answerability_acc']],dim=0)).cuda()
-
+    
 def log_formatter(log, tb, step_i):
   '''
   A function that is used in the previous version that is not for calculating starting, ending position and answerability accuracy. Due to compatibility
