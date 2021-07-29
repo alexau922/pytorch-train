@@ -632,18 +632,38 @@ def evaluate(model, sample, args, device, record, gpus=0, report=False):
     # for more information)
     start_logits, end_logits, answerability = model(ids, mask, type_ids, return_dict=False)
     
-    if 'correct_tot' not in record:
-        record['correct_tot'] = 0
-    if 'correct' not in record:
-        record['correct'] = 0
+    if 'start_pos_correct' not in record:
+        record['start_pos_correct'] = 0
+    if 'start_pos_correct_tot' not in record:
+        record['start_pos_correct_tot'] = 0
+    if 'end_pos_correct' not in record:
+        record['end_pos_correct'] = 0
+    if 'end_pos_correct_tot' not in record:
+        record['end_pos_correct_tot'] = 0
+    if 'answerability_correct' not in record:
+        record['answerability_correct'] = 0
+    if 'answerability_correct_tot' not in record:
+        record['answerability_correct_tot'] = 0
     
-    record['correct'] += (start_logits.argmax(-1) == start_pos).sum()
-    record['correct_tot'] += torch.LongTensor([start_pos.shape[0]]).sum().cuda()
+    log['start_acc'] = (start_logits.argmax(-1) == start_pos).sum()/torch.LongTensor([start_pos.shape[0]]).sum().cuda()
+    log['end_acc'] = (end_logits.argmax(-1) == end_pos).sum()/torch.LongTensor([end_pos.shape[0]]).sum().cuda()
+    # Calculate the number of match case between the answerability tensor (training vector) and answerable tensor (ground-truth label tensor)
+    log['answerability_acc'] = (torch.Tensor((answerability>0).cpu().numpy() == (answerable > 0.5).cpu().numpy()).sum().cuda()/torch.LongTensor([answerability.shape[0]]).sum().cuda())
+    # Overall_acc is the arithemetic mean of the three accuracies
+    log['overall_acc'] = torch.mean(torch.stack([log['start_acc'],log['end_acc'],log['answerability_acc']],dim=0)).cuda()
+    
+    record['start_pos_correct'] +=(start_logits.argmax(-1) == start_pos).sum()
+    record['start_pos_correct_tot'] += torch.LongTensor([start_pos.shape[0]]).sum().cuda()
+    record['end_pos_correct'] += (end_logits.argmax(-1) == end_pos).sum()
+    record['end_pos_correct_tot'] += torch.LongTensor([end_pos.shape[0]]).sum().cuda()
+    record['answerability_correct'] += (torch.Tensor((answerability>0).cpu().numpy() == (answerable > 0.5).cpu().numpy()).sum().cuda()
+    record['answerability_correct_tot'] += torch.LongTensor([answerability.shape[0]]).sum().cuda())
 
 def post_evaluate(record, args):
-    record['accuracy'] = float(record['correct']) / float(record['correct_tot'])
-    record['correct'] = record['correct']
-    record['correct_tot'] = record['correct_tot']
+    record['start_acc'] = float(record['start_pos_correct'])/float(record['start_pos_correct_tot'])
+    record['end_acc'] = float(record['end_pos_correct'])/float(record['end_pos_correct_tot'])
+    record['answerability_acc'] = float(record['answerability_correct'])/float(record['answerability_correct_tot'])
+    record['overall_acc'] = torch.mean(torch.stack([log['start_acc'],log['end_acc'],log['answerability_acc']],dim=0)).cuda()
 
 def log_formatter(log, tb, step_i):
   '''
