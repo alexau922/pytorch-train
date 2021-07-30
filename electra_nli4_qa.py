@@ -18,6 +18,7 @@ import datetime
 import sys
 
 from torch.utils.data import Dataset, TensorDataset, DataLoader
+from torch.utils.checkpoint import checkpoint_sequential
 
 from cantokenizer import CanTokenizer
 from transformers import TrainingArguments
@@ -330,10 +331,11 @@ class ElectraForSquad(ElectraPreTrainedModel):
         self.init_weights()
     
     def forward(self,input_ids = None, attn_mask = None, type_ids = None, start_positions = None, 
-                end_positions = None, is_impossible = None,return_dict = False):
+                end_positions = None, is_impossible = None,return_dict = False, argument = None):
         '''
         Do forward propagation to calculate the training loss.
         '''
+        
         # Run the ElectraModel forward function by passing the input_ids, attn_mask and type_ids
         discriminator_hidden_states = self.electra(input_ids,attn_mask,type_ids)
         # Get the first dimension in the output tensor as the sequence output
@@ -343,6 +345,10 @@ class ElectraForSquad(ElectraPreTrainedModel):
         # We can also know the answerability tensor using the split function
         answerability = self.classification(sequence_output)
         
+        args = None
+        if argument is not None:
+            args = argument
+            
         try:
           # reduce the last dimension of 1
           start_logits = start_logits.squeeze(-1)
@@ -354,6 +360,8 @@ class ElectraForSquad(ElectraPreTrainedModel):
           import traceback
           traceback.print_exc()
           raise e
+        
+        
         
         if start_positions is not None and end_positions is not None:
             # Initialize a cross entropy loss function to enable calculation of cross entropy loss afterwards
@@ -563,6 +571,7 @@ def get_loss(model, sample, args, device, gpus=0, report=False):
       # Model returns 4 values as we have provided start_positions, end_positions and is_impossible keys' values which will return the total loss also.
       # if we pass model(ids,mask,type_ids) it will only return start_logits, end_logits, answerability (see function "forward" in "ElectraForSquad" class
       # for more information)
+
       loss, start_logits, end_logits, answerability = model(ids, mask, type_ids,  start_positions = start_pos, 
                   end_positions = end_pos, is_impossible = answerable, return_dict=False)
     except Exception as e:
