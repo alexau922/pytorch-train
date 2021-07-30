@@ -816,6 +816,7 @@ parser.add_argument( '--num-workers', default=1, type=int,
                     help='num of preprocessing workers')
 parser.add_argument( '--anomaly-detection', action='store_true', help='enable pytorch anomaly detection')
 parser.add_argument('--prefix',default ='',type = str, help = 'prefix string of the file path')
+parser.add_argument('--update-freq', default = 1, type = int, help = 'Split the total batch-size into smaller chunk')
 
 args = parser.parse_args()
 
