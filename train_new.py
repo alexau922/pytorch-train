@@ -312,8 +312,13 @@ def train(rank, args):
     
     train_dataset = get_dataset(args)
     
+    # Whether the training dataset object has the method __getbatch__ or not
     batched_already = hasattr(train_dataset, '__getbatch__')
-
+    
+    # total_num_updates have two cases:
+    # 1) If it is < 100, then it is the total steps for all epoches, where 
+    #    itself originally is the number of epoches
+    # 2) If it is >= 100, then it represents the total number of steps
     if args.total_num_updates < 100:
         args.total_num_updates = len(train_dataset) * args.total_num_updates
 
@@ -321,8 +326,10 @@ def train(rank, args):
         args.warmup_updates = int(args.total_num_updates * args.warmup_updates)
     else:
         args.warmup_updates = int(args.warmup_updates)
-    #print('before train_sampler')
+
     train_sampler = None
+    
+    # If there is gpu
     if args.gpus:
         dist.init_process_group(
             'nccl', 
@@ -345,7 +352,9 @@ def train(rank, args):
                 rank=rank,
                 shuffle=args.shuffle)
 
-
+    # The train_loader is loading the chunks of dataset samples to the model.
+    # The batch_size is defined as "total length of the samples in each batch", which is
+    # args.batch_size*args.update_freq
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=args.batch_size if not batched_already else None,
@@ -549,6 +558,7 @@ def train(rank, args):
     )
 
     step_i = 0
+    step_i_cache = 0
 
     err = None
     tb = None
@@ -557,24 +567,172 @@ def train(rank, args):
         if rank == 0:
             pbar = tqdm(total=args.total_num_updates, file=sys.stdout)
         while step_i < args.total_num_updates:
+            #--------------------start of new version-------------------------
             if not args.gpus:
                 batches = pl.ParallelLoader(train_loader, [device]).per_device_loader(device)
+            
+            split_batches = [batches[i:i+args.update_freq] for i in range(0,len(batches),args.update_freq)]
+            
+            for i in range(0,len(batches),args.update_freq):
+                while True:
+                    # Get the grouped_batches, if rollback then still the same grouped batches
+                    grouped_batches = batches[i:i+args.update_freq] if i+args.update_freq < len(batches) else batches[i:]
+                    
+                    # zero the gradient
+                    optimizer.zero_grad()
+                    
+                    # The loss sum is zero
+                    loss_sum = 0
+                    
+                    # Cache the step
+                    step_i_cache = step_i
+                    # Whether we need to rollback or not
+                    no_need_rollback = []
+                    for samples in grouped_batches:
+                        step_i += 1
+                        if step_i > args.total_num_updates:
+                            break
+                        loss, log = get_loss(
+                            model, 
+                            samples, 
+                            args=args, 
+                            device=device, 
+                            gpus=args.gpus, 
+                            report=report_step
+                        )
+                        loss /= len(grouped_batches)
+                        if args.gpus:
+                            default_optimizer_step = optimizer.step
+                            with amp.scale_loss(loss,optimizer) as scaled_loss:
+                                loss_sum += scaled_loss
+                                scale_loss.backward()
+                            if optimizer.step is default_optimizer_step:
+                                #No need to rollback
+                                no_need_rollback.append(True)
+                            else:
+                                no_need_rollback.append(False)
+                        
+                                
+                                
+                                
+                                
+            
+        
+                    
+
+                            
+                    while True:
+                        loss, log = get_loss(
+                            model, 
+                            samples, 
+                            args=args, 
+                            device=device, 
+                            gpus=args.gpus, 
+                            report=report_step
+                        )
+                        # normalize the gradient
+                        loss /= len(grouped_batches)
+                        
+                        if args.gpus:
+                            default_optimizer_step = optimizer.step
+
+                            with amp.scale_loss(loss, optimizer) as scaled_loss:
+                                scaled_loss.backward()
+
+                            # If Amp detects an overflow, it patches optimizer.step.  In other words, if optimizer.step
+                            # was left unpatched, there was no overflow, and we don't need to replay.
+                            if optimizer.step is default_optimizer_step:
+                                optimizer.step()
+                                break
+
+                            optimizer.step() # If an overflow was detected, "optimizer.step" is the patched call, which does 
+                                             # nothing but restore optimizer.step to default_optimizer_step.
+                            if rank == 0:
+                                print("Overflowed, reducing loss scale and replaying batch.", flush=True)
+
+                        else:
+                            loss.backward()
+                            xm.optimizer_step(optimizer)
+                            xm.mark_step()
+                            break
+                        
+                        
+                if step_i > args.total_num_updates:
+                    break  
+             
                 
-            n_samples = len(batches)
+            for i in range(len(split_batches)):
+                grouped_batch = split_batches
+                optimizer.zero_grad()
+                loss_sum = 0
                 
-            for sample in batches:
+                for samples in grouped_batches:
+                    step_i += 1
+                    if step_i > args.total_num_updates:
+                        break
+                        
+                    while True: # the loop only for apex Gradient Overflow
+
+                        loss, log = get_loss(
+                            model, 
+                            samples, 
+                            args=args, 
+                            device=device, 
+                            gpus=args.gpus, 
+                            report=report_step
+                        )
+                        
+                        loss /= len(grouped_batches)
+
+                        if args.gpus:
+                            default_optimizer_step = optimizer.step
+
+                            with amp.scale_loss(loss, optimizer) as scaled_loss:
+                                scaled_loss.backward()
+
+                            # If Amp detects an overflow, it patches optimizer.step.  In other words, if optimizer.step
+                            # was left unpatched, there was no overflow, and we don't need to replay.
+                            if optimizer.step is default_optimizer_step:
+                                optimizer.step()
+                                break
+
+                            optimizer.step() # If an overflow was detected, "optimizer.step" is the patched call, which does 
+                                             # nothing but restore optimizer.step to default_optimizer_step.
+                            if rank == 0:
+                                print("Overflowed, reducing loss scale and replaying batch.", flush=True)
+
+                        else:
+                            loss.backward()
+                            xm.optimizer_step(optimizer)
+                            xm.mark_step()
+                            break
+                    
+                if step_i > args.total_num_updates:
+                    break
+                report_step = i % args.log_interval == 0
+                
+            
+            
+            num_pass = 0
+            
+            #-------------end of new version-----------------------------
+            for samples in batches: # whole dataset, e.g. 1000 total batches (each with 16 samples)
+                # samples = (batch_size, ...)
                 step_i += 1
                 if step_i > args.total_num_updates:
                     break
-
-                report_step = step_i % args.log_interval == 0
-
+                report_step = (step_i // args.update_freq) % args.log_interval == 0
+                
+                if num_pass % args.update_freq == 0:
+                    loss_sum = 0
+                    optimizer.zero_grad()
+                    
                 while True: # the loop only for apex Gradient Overflow
                     optimizer.zero_grad()
                     
                     total_loss, log = get_loss(
                         model, 
-                        sample, 
+                        samples, 
                         args=args, 
                         device=device, 
                         gpus=args.gpus, 
@@ -592,7 +750,7 @@ def train(rank, args):
                         if optimizer.step is default_optimizer_step:
                             optimizer.step()
                             break
-
+                            
                         optimizer.step() # If an overflow was detected, "optimizer.step" is the patched call, which does 
                                          # nothing but restore optimizer.step to default_optimizer_step.
                         if rank == 0:
@@ -606,7 +764,7 @@ def train(rank, args):
                         break
 
 
-
+                # step ?  num_pass ?
                 scheduler.step()
 
                 if report_step:
